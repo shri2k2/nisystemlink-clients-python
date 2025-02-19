@@ -1,10 +1,18 @@
 from typing import Any, Dict, List
 
 import pandas as pd
-from data_exporter.core.constants import ColumnGroup
-from data_exporter.core.constants._product_columns import product_columns
-from data_exporter.core.constants._result_columns import result_columns
-from data_exporter.core.constants._step_columns import step_columns
+from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants import (
+    ColumnGroup,
+)
+from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants._product_columns import (
+    product_columns,
+)
+from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants._result_columns import (
+    result_columns,
+)
+from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants._step_columns import (
+    step_columns,
+)
 from pandas import DataFrame
 
 

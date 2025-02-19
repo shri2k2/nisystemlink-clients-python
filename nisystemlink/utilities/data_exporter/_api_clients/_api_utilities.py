@@ -4,7 +4,12 @@ from typing import Callable, Dict
 import aiohttp
 import backoff
 from aiohttp import ClientError, ClientResponse
-from data_exporter._api_clients import _constants
+from nisystemlink.utilities.data_exporter._api_clients._constants._http_constants import (
+    HttpConstants,
+)
+from nisystemlink.utilities.data_exporter._api_clients._constants._user_exception_messages import (
+    UserExceptionMessages,
+)
 
 
 async def __get_response_content(response: ClientResponse) -> Dict:
@@ -28,40 +33,33 @@ async def __get_response_content(response: ClientResponse) -> Dict:
         elif "octet-stream" in content_type:
             binary_content = await response.read()
             if not binary_content:
-                raise ClientError(
-                    response, _constants.UserExceptionMessages.EMPTY_RESPONSE_BODY
-                )
+                raise ClientError(response, UserExceptionMessages.EMPTY_RESPONSE_BODY)
             return json.loads(binary_content.decode("utf-8"))
         else:
             raise ClientError(
                 response,
-                _constants.UserExceptionMessages.FAILED_TO_PARSE_RESPONSE.format(
+                UserExceptionMessages.FAILED_TO_PARSE_RESPONSE.format(
                     content_type=content_type
                 ),
             )
     except aiohttp.ServerConnectionError:
-        raise ClientError(response, _constants.UserExceptionMessages.FAILED_TO_CONNECT)
+        raise ClientError(response, UserExceptionMessages.FAILED_TO_CONNECT)
     except json.JSONDecodeError:
-        raise ClientError(
-            response, _constants.UserExceptionMessages.FAILED_TO_PARSE_JSON
-        )
+        raise ClientError(response, UserExceptionMessages.FAILED_TO_PARSE_JSON)
     except aiohttp.ClientResponseError:
-        raise ClientError(
-            response, _constants.UserExceptionMessages.FAILED_TO_RETRIEVE_RESPONSE
-        )
+        raise ClientError(response, UserExceptionMessages.FAILED_TO_RETRIEVE_RESPONSE)
     except aiohttp.ClientSSLError:
         raise ClientError(
             response,
-            _constants.UserExceptionMessages.FAILED_TO_ESTABLISH_SECURE_CONNECTION,
+            UserExceptionMessages.FAILED_TO_ESTABLISH_SECURE_CONNECTION,
         )
 
 
 @backoff.on_exception(
     backoff.expo,
     ClientError,
-    max_tries=_constants.HttpConstants.MAX_HTTP_RETRIES,
-    giveup=lambda e: e.response.status_code
-    not in _constants.HttpConstants.HTTP_RETRY_CODES,
+    max_tries=HttpConstants.MAX_HTTP_RETRIES,
+    giveup=lambda e: e.response.status_code not in HttpConstants.HTTP_RETRY_CODES,
 )
 async def __retry_request(callable_function: Callable[[], ClientResponse]) -> Dict:
     """Retries an HTTP request in case of client errors, using exponential backoff.
@@ -105,8 +103,8 @@ async def get_request(url: str, headers: Dict[str, str] = None) -> Dict:
             lambda: session.get(
                 url,
                 headers=headers,
-                ssl=_constants.HttpConstants.VERIFY_SSL_CERTIFICATE,
-                timeout=_constants.HttpConstants.TIMEOUT_IN_SECONDS,
+                ssl=HttpConstants.VERIFY_SSL_CERTIFICATE,
+                timeout=HttpConstants.TIMEOUT_IN_SECONDS,
             )
         )
 
@@ -138,7 +136,7 @@ async def post_request(url: str, body: Dict, headers: Dict[str, str] = None) -> 
                 url,
                 json=body,
                 headers=headers,
-                ssl=_constants.HttpConstants.VERIFY_SSL_CERTIFICATE,
-                timeout=_constants.HttpConstants.TIMEOUT_IN_SECONDS,
+                ssl=HttpConstants.VERIFY_SSL_CERTIFICATE,
+                timeout=HttpConstants.TIMEOUT_IN_SECONDS,
             )
         )
