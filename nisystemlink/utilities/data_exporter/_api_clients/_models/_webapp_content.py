@@ -1,10 +1,13 @@
 from pydantic import BaseModel
 
+
 class LinqQueryFilter(BaseModel):
     queryStepsLinqFilter: dict = {}
 
+
 class DataSettings(BaseModel):
     linqQueryFilter: LinqQueryFilter = LinqQueryFilter()
+
 
 class WebappContent(BaseModel):
     version: str

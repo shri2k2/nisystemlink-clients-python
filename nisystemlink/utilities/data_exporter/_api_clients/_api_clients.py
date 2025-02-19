@@ -1,14 +1,23 @@
-from nisystemlink.utilities.data_exporter._api_clients._clients._product_client import ProductClient
-from nisystemlink.utilities.data_exporter._api_clients._clients._results_client import ResultsClient
-from nisystemlink.utilities.data_exporter._api_clients._clients._steps_client import StepsClient
-from nisystemlink.utilities.data_exporter._api_clients._clients._webapps_client import WebAppsClient
-
 import os
+
+from nisystemlink.utilities.data_exporter._api_clients._clients._product_client import (
+    ProductClient,
+)
+from nisystemlink.utilities.data_exporter._api_clients._clients._results_client import (
+    ResultsClient,
+)
+from nisystemlink.utilities.data_exporter._api_clients._clients._steps_client import (
+    StepsClient,
+)
+from nisystemlink.utilities.data_exporter._api_clients._clients._webapps_client import (
+    WebAppsClient,
+)
+
 
 class ApiClients:
     __api_key: str | None
     __systemlink_uri: str | None
-    
+
     # clients from ni-systemlink (configuration done in the ProductClient in clients)
     product_client: ProductClient
 
@@ -16,7 +25,6 @@ class ApiClients:
     results_client: ResultsClient
     steps_client: StepsClient
     webapps_client: WebAppsClient
-
 
     def __init__(self) -> None:
         self.__api_key = os.getenv("SYSTEMLINK_API_KEY")

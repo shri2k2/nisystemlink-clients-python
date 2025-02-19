@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from pydantic import BaseModel
 
+
 class WebappMetaData(BaseModel):
     created: str
     id: str

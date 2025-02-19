@@ -13,7 +13,7 @@ result_columns = [
     "result_file_ids",
     "result_workspace",
     "result_status.status_type",
-    "result_status.status_name"
+    "result_status.status_name",
 ]
 """
 - result columns in the dataframe (prefix added)
