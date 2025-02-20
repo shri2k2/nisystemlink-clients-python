@@ -13,7 +13,7 @@ step_columns = [
     "step_updated_at",
     "step_has_children",
     "step_workspace",
-    "step_keywords"
+    "step_keywords",
 ]
 """
 - step columns in the dataframe (prefix added)

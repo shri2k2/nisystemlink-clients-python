@@ -1,8 +1,8 @@
-from nisystemlink.utilities.data_exporter._api_clients._models._status import Status
-
 from typing import Dict, List
 
+from nisystemlink.utilities.data_exporter._api_clients._models._status import Status
 from pydantic import BaseModel, Field
+
 
 class ResultResponse(BaseModel):
     status: Status

@@ -6,7 +6,7 @@ product_columns = [
     "product_updated_at",
     "product_keywords",
     "product_file_ids",
-    "product_workspace"
+    "product_workspace",
 ]
 """
 - product columns in the dataframe (prefix added)
