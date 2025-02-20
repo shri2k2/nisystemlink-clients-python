@@ -1,4 +1,4 @@
-from data_exporter._api_clients import _constants
+from nisystemlink.utilities.data_exporter._api_clients import _constants
 
 import json
 from typing import Callable, Dict
