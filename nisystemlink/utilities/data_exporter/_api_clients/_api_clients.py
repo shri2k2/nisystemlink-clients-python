@@ -1,13 +1,22 @@
 import os
 
+from nisystemlink.utilities.data_exporter._api_clients._clients._auth_client import (
+    AuthClient,
+)
 from nisystemlink.utilities.data_exporter._api_clients._clients._product_client import (
     ProductClient,
 )
 from nisystemlink.utilities.data_exporter._api_clients._clients._results_client import (
     ResultsClient,
 )
+from nisystemlink.utilities.data_exporter._api_clients._clients._spec_client import (
+    SpecClient,
+)
 from nisystemlink.utilities.data_exporter._api_clients._clients._steps_client import (
     StepsClient,
+)
+from nisystemlink.utilities.data_exporter._api_clients._clients._user_client import (
+    UserClient,
 )
 
 
@@ -23,3 +32,6 @@ class ApiClients:
         self.product_client = ProductClient(self.__api_key, self.__systemlink_uri)
         self.results_client = ResultsClient(self.__api_key, self.__systemlink_uri)
         self.steps_client = StepsClient(self.__api_key, self.__systemlink_uri)
+        self.spec_client = SpecClient(self.__api_key, self.__systemlink_uri)
+        self.auth_client = AuthClient(self.__api_key, self.__systemlink_uri)
+        self.user_client = UserClient(self.__api_key, self.__systemlink_uri)

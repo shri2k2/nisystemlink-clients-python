@@ -57,3 +57,16 @@ class ProductClient:
             all_products.extend(response.products)
 
         return all_products
+
+    def get_product_part_number(self, product_id: str) -> str:
+        """Gets product's part number.
+
+        Args:
+            product_id: ID of the product.
+
+        Returns:
+            Part Number of the product with the specified product ID.
+        """
+        product_response = self.__product_client.get_product(id=product_id)
+
+        return product_response.part_number
