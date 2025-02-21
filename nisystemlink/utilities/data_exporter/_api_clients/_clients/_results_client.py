@@ -24,7 +24,9 @@ class ResultsClient:
     def __init__(self, api_key: str | None, systemlink_uri: str | None) -> None:
         self.__api_key = api_key
 
-        self.__query_result_by_id_url = f"{systemlink_uri}{BaseHttpRoutes.TEST_MONITOR_BASE_ROUTE}/results/{{result_id}}"
+        self.__query_result_by_id_url = (
+            f"{systemlink_uri}{BaseHttpRoutes.TEST_MONITOR_BASE_ROUTE}/results/{{result_id}}"
+        )
         self.__query_results_url = (
             f"{systemlink_uri}{BaseHttpRoutes.TEST_MONITOR_BASE_ROUTE}/query-results"
         )

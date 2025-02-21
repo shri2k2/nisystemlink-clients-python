@@ -1,7 +1,18 @@
+from typing import Dict, List
+
 import pandas as pd
+from nisystemlink.clients.spec.models import Condition
 
 
-def __serialize_conditions(conditions):
+def __serialize_conditions(conditions: List[Condition]) -> Dict:
+    """Seriazlize conditions into desired format.
+
+    Args:
+        conditions: List of all conditions in a spec.
+
+    Returns:
+        Conditions as a dictionary in specific format for the dataframe.
+    """
     condition_dict = {}
 
     for condition in conditions:
@@ -37,8 +48,18 @@ def serialize_specs(
     product_part_number: str,
     workspaces: dict[str, str],
     users: dict[str, str],
-):
+) -> pd.DataFrame:
+    """Serialize specs into a dataframe with specific format.
 
+    Args:
+        specs: Specs dataframe.
+        product_part_number: Part number of the product to which the specs belong to.
+        workspaces: Dictionary of workspaces {workspace_id: workspace_name}.
+        users: Dictionary of users {user_id: first_name + last_name}.
+
+    Returns:
+        Serialized dataframe of specs.
+    """
     limit_fields = ["min", "max", "typical"]
     specs_dict = []
 
