@@ -1,32 +1,35 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from nisystemlink.utilities.data_exporter._api_clients._api_utilities import (
     post_request,
 )
-from nisystemlink.utilities.data_exporter._api_clients._constants._base_http_routes import (
+from nisystemlink.utilities.data_exporter._api_clients._constants import (
     BaseHttpRoutes,
-)
-from nisystemlink.utilities.data_exporter._api_clients._constants._http_constants import (
     HttpConstants,
+    SystemLinkQueryKeys,
 )
-from nisystemlink.utilities.data_exporter._api_clients._constants._system_link_http_keys import (
-    SystemLinkHttpKeys,
-)
+from nisystemlink.utilities.data_exporter._api_clients._models import StepResponse
+from pydantic import parse_obj_as
 
 
 class StepsClient:
-    __api_key: str | None
 
-    __query_steps_url: str
-
-    def __init__(self, api_key: str | None, systemlink_uri: str | None) -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, systemlink_uri: Optional[str] = None
+    ) -> None:
         self.__api_key = api_key
 
         self.__query_steps_url = (
             f"{systemlink_uri}{BaseHttpRoutes.TEST_MONITOR_BASE_ROUTE}/query-steps"
         )
 
-    async def query_steps(self, steps_filter: str, results_filter: str) -> List[Dict]:
+    def __get_headers(self) -> Dict[str, str]:
+        """Helper method to get headers with API key if available."""
+        return {"x-ni-api-key": self.__api_key} if self.__api_key else {}
+
+    async def query_steps(
+        self, steps_filter: str, results_filter: str
+    ) -> List[StepResponse]:
         """Makes a POST request to query the test steps.
 
         Args:
@@ -36,24 +39,26 @@ class StepsClient:
         Returns:
             List[Dict]: List of test steps
         """
-        steps = []
         body = {
-            "filter": steps_filter,
-            "resultFilter": results_filter,
-            "take": HttpConstants.TAKE,
-            "orderBy": SystemLinkHttpKeys.UPDATED_AT,
+            SystemLinkQueryKeys.FILTER: steps_filter,
+            SystemLinkQueryKeys.RESULT_FILTER: results_filter,
+            SystemLinkQueryKeys.TAKE: HttpConstants.TAKE,
+            SystemLinkQueryKeys.ORDER_BY: SystemLinkQueryKeys.UPDATED_AT,
         }
-        if self.__api_key:
-            headers = {"x-ni-api-key": self.__api_key}
+        headers = self.__get_headers()
+
+        all_steps = []
+
         response = await post_request(
             self.__query_steps_url, body=body, headers=headers
         )
+        all_steps.extend(response["steps"])
 
         while response["continuationToken"]:
-            steps = steps + response["steps"]
             body["continuationToken"] = response["continuationToken"]
             response = await post_request(
                 self.__query_steps_url, body=body, headers=headers
             )
+            all_steps.extend(response["steps"])
 
-        return steps
+        return parse_obj_as(List[StepResponse], all_steps)

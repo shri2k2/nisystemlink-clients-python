@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from nisystemlink.clients.core import HttpConfiguration
 from nisystemlink.clients.product import ProductClient as SystemLinkProductClient
@@ -7,31 +7,29 @@ from nisystemlink.clients.product.models import (
     ProductField,
     QueryProductsRequest,
 )
-from nisystemlink.utilities.data_exporter._api_clients._constants._http_constants import (
+from nisystemlink.utilities.data_exporter._api_clients._constants import (
     HttpConstants,
 )
 
 
 class ProductClient:
-    __api_key: str | None
-    __systemlink_uri: str | None
 
-    __product_client: SystemLinkProductClient
-
-    def __init__(self, api_key: str | None, systemlink_uri: str | None) -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, systemlink_uri: Optional[str] = None
+    ) -> None:
         self.__api_key = api_key
         self.__systemlink_uri = systemlink_uri
 
-        self.__initialize_product_client()
+        self.__product_client = self.__initialize_product_client()
 
-    def __initialize_product_client(self) -> None:
+    def __initialize_product_client(self) -> SystemLinkProductClient:
         if self.__api_key and self.__systemlink_uri:
             server_configuration = HttpConfiguration(
                 server_uri=self.__systemlink_uri, api_key=self.__api_key
             )
-            self.__product_client = SystemLinkProductClient(server_configuration)
-        else:
-            self.__product_client = SystemLinkProductClient()
+            return SystemLinkProductClient(server_configuration)
+
+        return SystemLinkProductClient()
 
     def query_products(self, products_filter: str) -> List[Product]:
         """Queries the products based on the filter provided.
@@ -47,8 +45,11 @@ class ProductClient:
             order_by=ProductField.UPDATED_AT,
             take=HttpConstants.TAKE,
         )
+
+        all_products = []
+
         response = self.__product_client.query_products_paged(products_query)
-        all_products = response.products
+        all_products.extend(response.products)
 
         while response.continuation_token:
             products_query.continuation_token = response.continuation_token

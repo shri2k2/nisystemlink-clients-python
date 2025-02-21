@@ -1,67 +1,34 @@
-import json
-from typing import Callable, Dict
+from typing import Awaitable, Callable, Dict
 
 import aiohttp
 import backoff
-from aiohttp import ClientError, ClientResponse
-from nisystemlink.utilities.data_exporter._api_clients._constants._http_constants import (
+from aiohttp import ClientConnectionError, ClientResponse, ClientResponseError
+from nisystemlink.utilities.data_exporter._api_clients._constants import (
     HttpConstants,
-)
-from nisystemlink.utilities.data_exporter._api_clients._constants._user_exception_messages import (
+    HttpRetryConstants,
     UserExceptionMessages,
 )
 
 
-async def __get_response_content(response: ClientResponse) -> Dict:
-    """Extracts and parses the response content based on the 'Content-Type' header.
-
-    Args:
-        response (ClientResponse): The HTTP response object.
-
-    Returns:
-        Dict: The parsed JSON content if the response is JSON, or raises appropriate errors.
-
-    Raises:
-        ClientError: If there is any issue with parsing or extracting content from the response.
-    """
-    content_type = response.headers.get("Content-Type", "").lower()
-
-    try:
-        # Handle different content types
-        if "application/json" in content_type:
-            return await response.json()
-        elif "octet-stream" in content_type:
-            binary_content = await response.read()
-            if not binary_content:
-                raise ClientError(response, UserExceptionMessages.EMPTY_RESPONSE_BODY)
-            return json.loads(binary_content.decode("utf-8"))
-        else:
-            raise ClientError(
-                response,
-                UserExceptionMessages.FAILED_TO_PARSE_RESPONSE.format(
-                    content_type=content_type
-                ),
-            )
-    except aiohttp.ServerConnectionError:
-        raise ClientError(response, UserExceptionMessages.FAILED_TO_CONNECT)
-    except json.JSONDecodeError:
-        raise ClientError(response, UserExceptionMessages.FAILED_TO_PARSE_JSON)
-    except aiohttp.ClientResponseError:
-        raise ClientError(response, UserExceptionMessages.FAILED_TO_RETRIEVE_RESPONSE)
-    except aiohttp.ClientSSLError:
-        raise ClientError(
-            response,
-            UserExceptionMessages.FAILED_TO_ESTABLISH_SECURE_CONNECTION,
+def __is_not_worth_retry(e: Exception) -> bool:
+    return not (
+        (
+            isinstance(e, aiohttp.ClientResponseError)
+            and e.status in HttpRetryConstants.HTTP_RETRY_CODES
         )
+        or isinstance(e, aiohttp.ClientConnectionError)
+    )
 
 
 @backoff.on_exception(
     backoff.expo,
-    ClientError,
-    max_tries=HttpConstants.MAX_HTTP_RETRIES,
-    giveup=lambda e: e.response.status_code not in HttpConstants.HTTP_RETRY_CODES,
+    (ClientConnectionError, ClientResponseError),
+    max_tries=HttpRetryConstants.MAX_HTTP_RETRIES,
+    giveup=__is_not_worth_retry,
 )
-async def __retry_request(callable_function: Callable[[], ClientResponse]) -> Dict:
+async def __retry_request(
+    callable_function: Callable[[], Awaitable[ClientResponse]]
+) -> ClientResponse:
     """Retries an HTTP request in case of client errors, using exponential backoff.
 
     Args:
@@ -73,16 +40,13 @@ async def __retry_request(callable_function: Callable[[], ClientResponse]) -> Di
     Raises:
         ClientError: If the request fails and retries are exhausted.
     """
-    async with callable_function() as response:
-        if not response.ok:
-            raise ClientError(
-                response, f"HTTP request failed with status code {response.status}"
-            )
+    response = await callable_function()
+    response.raise_for_status()
 
-        return await __get_response_content(response)
+    return response
 
 
-async def get_request(url: str, headers: Dict[str, str] = None) -> Dict:
+async def get_request(url: str, headers: Dict[str, str] = {}) -> Dict:
     """Makes an HTTP GET request and retrieves the response content.
 
     Args:
@@ -95,11 +59,10 @@ async def get_request(url: str, headers: Dict[str, str] = None) -> Dict:
     Raises:
         ClientError: If the request fails or encounters issues.
     """
-    if headers is None:
-        headers = {}
+    session = aiohttp.ClientSession()
 
-    async with aiohttp.ClientSession() as session:
-        return await __retry_request(
+    try:
+        response = await __retry_request(
             lambda: session.get(
                 url,
                 headers=headers,
@@ -108,8 +71,20 @@ async def get_request(url: str, headers: Dict[str, str] = None) -> Dict:
             )
         )
 
+    except aiohttp.ClientResponseError as exception:
+        raise Exception(
+            UserExceptionMessages.FAILED_TO_CONNECT.format(
+                exception.request_info.url.path
+            )
+        ) from exception
 
-async def post_request(url: str, body: Dict, headers: Dict[str, str] = None) -> Dict:
+    json_response = await response.json()
+    await session.close()
+
+    return json_response
+
+
+async def post_request(url: str, body: Dict, headers: Dict[str, str] = {}) -> Dict:
     """Makes an HTTP POST request with a JSON body and retrieves the response content.
 
     Args:
@@ -123,15 +98,14 @@ async def post_request(url: str, body: Dict, headers: Dict[str, str] = None) -> 
     Raises:
         ClientError: If the request fails or encounters issues.
     """
-    if headers is None:
-        headers = {}
-
     default_headers = {"accept": "application/json", "Content-Type": "application/json"}
 
     headers = {**default_headers, **headers}
 
-    async with aiohttp.ClientSession() as session:
-        return await __retry_request(
+    session = aiohttp.ClientSession()
+
+    try:
+        response = await __retry_request(
             lambda: session.post(
                 url,
                 json=body,
@@ -140,3 +114,15 @@ async def post_request(url: str, body: Dict, headers: Dict[str, str] = None) -> 
                 timeout=HttpConstants.TIMEOUT_IN_SECONDS,
             )
         )
+
+    except aiohttp.ClientResponseError as exception:
+        raise Exception(
+            UserExceptionMessages.FAILED_TO_CONNECT.format(
+                exception.request_info.url.path
+            )
+        ) from exception
+
+    json_response = await response.json()
+    await session.close()
+
+    return json_response

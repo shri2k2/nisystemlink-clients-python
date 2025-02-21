@@ -1,52 +1,35 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from nisystemlink.utilities.data_exporter._api_clients._api_utilities import (
-    get_request,
     post_request,
 )
-from nisystemlink.utilities.data_exporter._api_clients._constants._base_http_routes import (
+from nisystemlink.utilities.data_exporter._api_clients._constants import (
     BaseHttpRoutes,
-)
-from nisystemlink.utilities.data_exporter._api_clients._constants._http_constants import (
     HttpConstants,
+    SystemLinkQueryKeys,
 )
-from nisystemlink.utilities.data_exporter._api_clients._constants._system_link_http_keys import (
-    SystemLinkHttpKeys,
+from nisystemlink.utilities.data_exporter._api_clients._models import (
+    ResultResponse,
 )
+from pydantic import parse_obj_as
 
 
 class ResultsClient:
-    __api_key: str | None
 
-    __query_result_by_id_url: str
-    __query_results_url: str
-
-    def __init__(self, api_key: str | None, systemlink_uri: str | None) -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, systemlink_uri: Optional[str] = None
+    ) -> None:
         self.__api_key = api_key
 
-        self.__query_result_by_id_url = f"{systemlink_uri}{BaseHttpRoutes.TEST_MONITOR_BASE_ROUTE}/results/{{result_id}}"
         self.__query_results_url = (
             f"{systemlink_uri}{BaseHttpRoutes.TEST_MONITOR_BASE_ROUTE}/query-results"
         )
 
-    async def query_result_by_id(self, result_id: str) -> Dict:
-        """Makes a GET request to retrieve the result by id.
+    def __get_headers(self) -> Dict[str, str]:
+        """Helper method to get headers with API key if available."""
+        return {"x-ni-api-key": self.__api_key} if self.__api_key else {}
 
-        Args:
-            result_id (str): ID of the test result
-
-        Returns:
-            Dict: Test result
-        """
-        if self.__api_key:
-            headers = {"x-ni-api-key": self.__api_key}
-        response = await get_request(
-            self.__query_result_by_id_url.format(result_id=result_id), headers
-        )
-
-        return response
-
-    async def query_results(self, results_filter: str) -> List[Dict]:
+    async def query_results(self, results_filter: str) -> List[ResultResponse]:
         """Makes a POST request to query the test results.
 
         Args:
@@ -55,23 +38,25 @@ class ResultsClient:
         Returns:
             List[Dict]: List of test results
         """
-        results = []
         body = {
-            "filter": results_filter,
-            "take": HttpConstants.TAKE,
-            "orderBy": SystemLinkHttpKeys.UPDATED_AT,
+            SystemLinkQueryKeys.FILTER: results_filter,
+            SystemLinkQueryKeys.TAKE: HttpConstants.TAKE,
+            SystemLinkQueryKeys.ORDER_BY: SystemLinkQueryKeys.UPDATED_AT,
         }
-        if self.__api_key:
-            headers = {"x-ni-api-key": self.__api_key}
+        headers = self.__get_headers()
+
+        all_results = []
+
         response = await post_request(
             self.__query_results_url, body=body, headers=headers
         )
+        all_results.extend(response["results"])
 
         while response["continuationToken"]:
-            results = results + response["results"]
             body["continuationToken"] = response["continuationToken"]
             response = await post_request(
                 self.__query_results_url, body=body, headers=headers
             )
+            all_results.extend(response["results"])
 
-        return results
+        return parse_obj_as(List[ResultResponse], all_results)

@@ -1,16 +1,10 @@
 from typing import Any, Dict, List
 
 import pandas as pd
-from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants import (
+from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration._constants import (
     ColumnGroup,
-)
-from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants._product_columns import (
     product_columns,
-)
-from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants._result_columns import (
     result_columns,
-)
-from nisystemlink.utilities.data_exporter.parametric_data_exporter.configuration.constants._step_columns import (
     step_columns,
 )
 from pandas import DataFrame
@@ -18,7 +12,7 @@ from pandas import DataFrame
 
 def __group_columns(df_columns: List[str]) -> Dict[str, List]:
     """Gets the list of columns in the dataframe and group them under various categories"""
-    grouped_columns = {
+    grouped_columns: Dict[str, List] = {
         ColumnGroup.PROPERTIES: [],
         ColumnGroup.STATUS_TYPE_SUMMARY: [],
         ColumnGroup.DATA: [],
