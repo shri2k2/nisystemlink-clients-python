@@ -1,15 +1,15 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from nisystemlink.utilities.data_exporter._api_clients._api_utilities import (
     post_request,
 )
-from nisystemlink.utilities.data_exporter._api_clients._constants._base_http_routes import (
-    BaseHttpRoutes,
-)
+from nisystemlink.utilities.data_exporter._api_clients._constants import BaseHttpRoutes
 
 
 class UserClient:
-    def __init__(self, api_key: str, systemlink_uri: str) -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, systemlink_uri: Optional[str] = None
+    ) -> None:
         """Initialize an instance.
 
         Args:
@@ -22,7 +22,7 @@ class UserClient:
             f"{systemlink_uri}{BaseHttpRoutes.USER_APIS_ROUTE}/v1/users/query"
         )
 
-    def __get_headers(self):
+    def __get_headers(self) -> Dict:
         """Gets Headers.
 
         Returns:
@@ -60,7 +60,7 @@ class UserClient:
 
         return users_object
 
-    async def get_users(self) -> List[Dict]:
+    async def get_users(self) -> Dict:
         """Gets all users.
 
         Returns:

@@ -1,13 +1,13 @@
-from typing import Dict, List
+from typing import Dict, Optional
 
 from nisystemlink.utilities.data_exporter._api_clients._api_utilities import get_request
-from nisystemlink.utilities.data_exporter._api_clients._constants._base_http_routes import (
-    BaseHttpRoutes,
-)
+from nisystemlink.utilities.data_exporter._api_clients._constants import BaseHttpRoutes
 
 
 class AuthClient:
-    def __init__(self, api_key: str, systemlink_uri: str) -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, systemlink_uri: Optional[str] = None
+    ) -> None:
         """Initialize an instance.
 
         Args:
@@ -20,7 +20,7 @@ class AuthClient:
             f"{systemlink_uri}{BaseHttpRoutes.AUTH_APIS_ROUTE}/v1/auth"
         )
 
-    def __get_headers(self) -> str:
+    def __get_headers(self) -> Dict:
         """Gets Headers.
 
         Returns:
@@ -28,7 +28,7 @@ class AuthClient:
         """
         return {"x-ni-api-key": self.__api_key} if self.__api_key else {}
 
-    async def get_workspaces(self) -> List[Dict]:
+    async def get_workspaces(self) -> Dict:
         """Gets all workspaces.
 
         Returns:

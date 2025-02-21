@@ -2,6 +2,7 @@ from typing import Dict, List
 
 import pandas as pd
 from nisystemlink.clients.spec.models import Condition
+from nisystemlink.clients.spec.models._condition import NumericConditionValue
 
 
 def __serialize_conditions(conditions: List[Condition]) -> Dict:
@@ -17,11 +18,12 @@ def __serialize_conditions(conditions: List[Condition]) -> Dict:
 
     for condition in conditions:
         column_header = (
-            "condition_"
-            + condition.name
+            "condition_" + condition.name
+            if condition.name
+            else ""
             + (
                 f"({condition.value.unit})"
-                if condition.value.condition_type.name == "NUMERIC"
+                if type(condition.value) == NumericConditionValue
                 else ""
             )
         )
@@ -30,13 +32,16 @@ def __serialize_conditions(conditions: List[Condition]) -> Dict:
 
         values = []
 
-        if condition.value.condition_type.name == "NUMERIC":
-            for range in condition.value.range:
-                values.append(
-                    f"[{'; '.join([f'{k}: {v}' for k, v in vars(range).items() if v is not None])}]"
-                )
+        if condition.value:
+            if type(condition.value) == NumericConditionValue:
+                for range in condition.value.range or []:
+                    values.append(
+                        f"[{'; '.join([f'{k}: {v}' for k, v in vars(range).items() if v is not None])}]"
+                    )
 
-        values.extend([str(discrete) for discrete in condition.value.discrete])
+            values.extend(
+                [str(discrete) for discrete in condition.value.discrete or []]
+            )
 
         condition_dict[column_header] = ", ".join(values)
 

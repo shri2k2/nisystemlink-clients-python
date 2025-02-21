@@ -1,15 +1,15 @@
-from typing import List
+from typing import List, Optional
 
 from nisystemlink.clients.core import HttpConfiguration
 from nisystemlink.clients.spec import SpecClient as SystemLinkSpecClient
-from nisystemlink.clients.spec.models._query_specs import (
-    QuerySpecifications,
-    QuerySpecificationsRequest,
-)
+from nisystemlink.clients.spec.models._query_specs import QuerySpecificationsRequest
+from nisystemlink.clients.spec.models._specification import SpecificationWithHistory
 
 
 class SpecClient:
-    def __init__(self, api_key: str, systemlink_uri: str) -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, systemlink_uri: Optional[str] = None
+    ) -> None:
         """Initialize an instance.
 
         Args:
@@ -31,7 +31,7 @@ class SpecClient:
         else:
             self.__spec_client = SystemLinkSpecClient()
 
-    def query_specs(self, product_ids: List[str]) -> QuerySpecifications:
+    def query_specs(self, product_ids: List[str]) -> List[SpecificationWithHistory]:
         """Query specs of a specific product.
 
         Args:
@@ -46,7 +46,7 @@ class SpecClient:
                 take=1000,
             )
         )
-        specs = spec_response.specs
+        specs = spec_response.specs if spec_response.specs else []
 
         while spec_response.continuation_token:
             continuation_token = spec_response.continuation_token
@@ -58,6 +58,6 @@ class SpecClient:
                 )
             )
 
-            specs.extend(spec_response.specs)
+            specs.extend(spec_response.specs if spec_response.specs else [])
 
         return specs
