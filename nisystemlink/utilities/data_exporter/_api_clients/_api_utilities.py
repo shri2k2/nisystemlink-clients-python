@@ -3,10 +3,13 @@ from typing import Awaitable, Callable, Dict
 import aiohttp
 import backoff
 from aiohttp import ClientConnectionError, ClientResponse, ClientResponseError
+from nisystemlink.utilities.data_exporter._api_clients._api_exception import (
+    ApiException,
+)
 from nisystemlink.utilities.data_exporter._api_clients._constants import (
+    ApiExceptionMessages,
     HttpConstants,
     HttpRetryConstants,
-    UserExceptionMessages,
 )
 
 
@@ -72,10 +75,13 @@ async def get_request(url: str, headers: Dict[str, str] = {}) -> Dict:
         )
 
     except aiohttp.ClientResponseError as exception:
-        raise Exception(
-            UserExceptionMessages.FAILED_TO_CONNECT.format(
+        raise ApiException(
+            message=ApiExceptionMessages.FAILED_API_REQUEST.format(
                 exception.request_info.url.path
-            )
+            ),
+            status_code=exception.status,
+            response=response,
+            request_info=exception.request_info,
         ) from exception
 
     json_response = await response.json()
@@ -116,10 +122,13 @@ async def post_request(url: str, body: Dict, headers: Dict[str, str] = {}) -> Di
         )
 
     except aiohttp.ClientResponseError as exception:
-        raise Exception(
-            UserExceptionMessages.FAILED_TO_CONNECT.format(
+        raise ApiException(
+            message=ApiExceptionMessages.FAILED_API_REQUEST.format(
                 exception.request_info.url.path
-            )
+            ),
+            status_code=exception.status,
+            response=response,
+            request_info=exception.request_info,
         ) from exception
 
     json_response = await response.json()

@@ -1,9 +1,13 @@
 from typing import Dict, List, Optional
 
+from nisystemlink.utilities.data_exporter._api_clients._api_exception import (
+    ApiException,
+)
 from nisystemlink.utilities.data_exporter._api_clients._api_utilities import (
     post_request,
 )
 from nisystemlink.utilities.data_exporter._api_clients._constants import (
+    ApiExceptionMessages,
     BaseHttpRoutes,
     HttpConstants,
     SystemLinkQueryKeys,
@@ -38,25 +42,53 @@ class ResultsClient:
         Returns:
             List[Dict]: List of test results
         """
-        body = {
-            SystemLinkQueryKeys.FILTER: results_filter,
-            SystemLinkQueryKeys.TAKE: HttpConstants.TAKE,
-            SystemLinkQueryKeys.ORDER_BY: SystemLinkQueryKeys.UPDATED_AT,
-        }
-        headers = self.__get_headers()
+        try:
+            body = {
+                SystemLinkQueryKeys.FILTER: results_filter,
+                SystemLinkQueryKeys.TAKE: HttpConstants.TAKE,
+                SystemLinkQueryKeys.ORDER_BY: SystemLinkQueryKeys.UPDATED_AT,
+            }
+            headers = self.__get_headers()
 
-        all_results = []
+            all_results = []
 
-        response = await post_request(
-            self.__query_results_url, body=body, headers=headers
-        )
-        all_results.extend(response["results"])
-
-        while response["continuationToken"]:
-            body["continuationToken"] = response["continuationToken"]
             response = await post_request(
                 self.__query_results_url, body=body, headers=headers
             )
+
+            if not response or response["results"] is None:
+                raise ApiException(
+                    message=ApiExceptionMessages.FAILED_TO_RETRIEVE_PROPER_RESPONSE.format(
+                        request_context="querying results"
+                    ),
+                    response=response,
+                )
+
             all_results.extend(response["results"])
 
-        return parse_obj_as(List[ResultResponse], all_results)
+            while response["continuationToken"]:
+                body["continuationToken"] = response["continuationToken"]
+                response = await post_request(
+                    self.__query_results_url, body=body, headers=headers
+                )
+
+                if not response or response["results"] is None:
+                    raise ApiException(
+                        message=ApiExceptionMessages.EMPTY_PAGINATION_RESPONSE.format(
+                            request_context="querying results"
+                        ),
+                        response=response,
+                    )
+
+                all_results.extend(response["results"])
+
+            return parse_obj_as(List[ResultResponse], all_results)
+
+        except ApiException:
+            raise  # Re-raise API errors
+
+        except Exception as exception:
+            raise ApiException(
+                message=ApiExceptionMessages.FAILED_API_REQUEST.format("query results"),
+                response=response,
+            ) from exception

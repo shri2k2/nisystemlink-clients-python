@@ -1,9 +1,13 @@
 from typing import Dict, List, Optional
 
+from nisystemlink.utilities.data_exporter._api_clients._api_exception import (
+    ApiException,
+)
 from nisystemlink.utilities.data_exporter._api_clients._api_utilities import (
     post_request,
 )
 from nisystemlink.utilities.data_exporter._api_clients._constants import (
+    ApiExceptionMessages,
     BaseHttpRoutes,
     HttpConstants,
     SystemLinkQueryKeys,
@@ -39,26 +43,54 @@ class StepsClient:
         Returns:
             List[Dict]: List of test steps
         """
-        body = {
-            SystemLinkQueryKeys.FILTER: steps_filter,
-            SystemLinkQueryKeys.RESULT_FILTER: results_filter,
-            SystemLinkQueryKeys.TAKE: HttpConstants.TAKE,
-            SystemLinkQueryKeys.ORDER_BY: SystemLinkQueryKeys.UPDATED_AT,
-        }
-        headers = self.__get_headers()
+        try:
+            body = {
+                SystemLinkQueryKeys.FILTER: steps_filter,
+                SystemLinkQueryKeys.RESULT_FILTER: results_filter,
+                SystemLinkQueryKeys.TAKE: HttpConstants.TAKE,
+                SystemLinkQueryKeys.ORDER_BY: SystemLinkQueryKeys.UPDATED_AT,
+            }
+            headers = self.__get_headers()
 
-        all_steps = []
+            all_steps = []
 
-        response = await post_request(
-            self.__query_steps_url, body=body, headers=headers
-        )
-        all_steps.extend(response["steps"])
-
-        while response["continuationToken"]:
-            body["continuationToken"] = response["continuationToken"]
             response = await post_request(
                 self.__query_steps_url, body=body, headers=headers
             )
+
+            if not response or response["steps"] is None:
+                raise ApiException(
+                    message=ApiExceptionMessages.FAILED_TO_RETRIEVE_PROPER_RESPONSE.format(
+                        request_context="querying steps"
+                    ),
+                    response=response,
+                )
+
             all_steps.extend(response["steps"])
 
-        return parse_obj_as(List[StepResponse], all_steps)
+            while response["continuationToken"]:
+                body["continuationToken"] = response["continuationToken"]
+                response = await post_request(
+                    self.__query_steps_url, body=body, headers=headers
+                )
+
+                if not response or response["steps"] is None:
+                    raise ApiException(
+                        message=ApiExceptionMessages.EMPTY_PAGINATION_RESPONSE.format(
+                            request_context="querying steps"
+                        ),
+                        response=response,
+                    )
+
+                all_steps.extend(response["steps"])
+
+            return parse_obj_as(List[StepResponse], all_steps)
+
+        except ApiException:
+            raise  # Re-raise API errors
+
+        except Exception as exception:
+            raise ApiException(
+                message=ApiExceptionMessages.FAILED_API_REQUEST.format("query steps"),
+                response=response,
+            ) from exception

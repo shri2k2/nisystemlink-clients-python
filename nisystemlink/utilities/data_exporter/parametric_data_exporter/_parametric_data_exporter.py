@@ -6,6 +6,9 @@ from nisystemlink.utilities.data_exporter._api_clients._models import (
     ResultResponse,
     StepResponse,
 )
+from nisystemlink.utilities.data_exporter.parametric_data_exporter._constants import (
+    UserExceptionMessages,
+)
 from nisystemlink.utilities.data_exporter.parametric_data_exporter._dataframe_handles import (
     merge_dataframes,
     normalize_dataframe,
@@ -13,12 +16,24 @@ from nisystemlink.utilities.data_exporter.parametric_data_exporter._dataframe_ha
 from nisystemlink.utilities.data_exporter.parametric_data_exporter._models import (
     QueryLinqFilter,
 )
+from nisystemlink.utilities.data_exporter.parametric_data_exporter._user_exception import (
+    UserException,
+)
 
 
 class ParametricDataExporter:
 
     def __init__(self, query_linq_filter: QueryLinqFilter):
         self.__api_clients = ApiClients()
+
+        if not isinstance(query_linq_filter, QueryLinqFilter):
+            raise UserException(
+                UserExceptionMessages.TYPE_MISMATCH.format(
+                    variable_name="query_linq_filter",
+                    expected_type="QueryLinqFilter",
+                    inferred_type=type(query_linq_filter),
+                )
+            )
         self.__query_linq_filter = query_linq_filter
 
     async def export_csv_data(self) -> io.BytesIO:

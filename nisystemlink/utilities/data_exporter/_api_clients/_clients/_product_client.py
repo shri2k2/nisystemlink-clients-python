@@ -7,7 +7,11 @@ from nisystemlink.clients.product.models import (
     ProductField,
     QueryProductsRequest,
 )
+from nisystemlink.utilities.data_exporter._api_clients._api_exception import (
+    ApiException,
+)
 from nisystemlink.utilities.data_exporter._api_clients._constants import (
+    ApiExceptionMessages,
     HttpConstants,
 )
 
@@ -40,20 +44,50 @@ class ProductClient:
         Returns:
             List[Product]: The list of products that match the filter.
         """
-        products_query = QueryProductsRequest(
-            filter=products_filter,
-            order_by=ProductField.UPDATED_AT,
-            take=HttpConstants.TAKE,
-        )
+        try:
+            products_query = QueryProductsRequest(
+                filter=products_filter,
+                order_by=ProductField.UPDATED_AT,
+                take=HttpConstants.TAKE,
+            )
 
-        all_products = []
+            all_products = []
 
-        response = self.__product_client.query_products_paged(products_query)
-        all_products.extend(response.products)
-
-        while response.continuation_token:
-            products_query.continuation_token = response.continuation_token
             response = self.__product_client.query_products_paged(products_query)
+
+            if not response or response.products is None:
+                raise ApiException(
+                    message=ApiExceptionMessages.FAILED_TO_RETRIEVE_PROPER_RESPONSE.format(
+                        request_context="querying products"
+                    ),
+                    response=response,
+                )
+
             all_products.extend(response.products)
 
-        return all_products
+            while response.continuation_token:
+                products_query.continuation_token = response.continuation_token
+                response = self.__product_client.query_products_paged(products_query)
+
+                if not response or response.products is None:
+                    raise ApiException(
+                        message=ApiExceptionMessages.EMPTY_PAGINATION_RESPONSE.format(
+                            request_context="querying products"
+                        ),
+                        response=response,
+                    )
+
+                all_products.extend(response.products)
+
+            return all_products
+
+        except ApiException:
+            raise  # Re-raise API errors
+
+        except Exception as exception:
+            raise ApiException(
+                message=ApiExceptionMessages.FAILED_API_REQUEST.format(
+                    "query products"
+                ),
+                response=response,
+            ) from exception
