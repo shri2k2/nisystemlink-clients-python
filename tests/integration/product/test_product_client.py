@@ -17,7 +17,9 @@ from nisystemlink.clients.product.models._query_products_request import (
     QueryProductsRequest,
     QueryProductValuesRequest,
 )
+from nisystemlink.clients.product.utilities import get_products_dataframe
 from nisystemlink.clients.product.utilities import get_products_linked_to_file
+from pandas import DataFrame
 
 
 @pytest.fixture(scope="class")
@@ -385,3 +387,58 @@ class TestProductClient:
         assert queried_product.part_number is None
         assert queried_product.keywords is None
         assert queried_product.properties is None
+
+    def test__get_products_dataframe__returns_dataframe(
+        self, client, create_products, unique_identifier
+    ):
+        part_number = unique_identifier
+
+        create_products([CreateProductRequest(part_number=part_number)])
+        products_dataframe = get_products_dataframe(
+            product_client=client,
+            products_query_filter=f'partNumber == "{part_number}"',
+        )
+
+        assert isinstance(products_dataframe, DataFrame)
+        assert not products_dataframe.empty
+        assert ProductProjection.PART_NUMBER.lower() in products_dataframe.columns
+        assert (
+            products_dataframe.iloc[0][ProductProjection.PART_NUMBER.lower()]
+            == part_number
+        )
+
+    def test__get_products_dataframe_with_projection__returns_limited_columns(
+        self, client, create_products, unique_identifier
+    ):
+        part_number = unique_identifier
+        name = "Projected Product"
+        family = "Projected Family"
+
+        create_products(
+            [CreateProductRequest(part_number=part_number, name=name, family=family)]
+        )
+        products_dataframe = get_products_dataframe(
+            product_client=client,
+            products_query_filter=f'partNumber == "{part_number}"',
+            column_projection=[ProductProjection.NAME, ProductProjection.FAMILY],
+        )
+
+        assert isinstance(products_dataframe, DataFrame)
+        assert not products_dataframe.empty
+        assert ProductProjection.NAME.lower() in products_dataframe.columns
+        assert ProductProjection.FAMILY.lower() in products_dataframe.columns
+        assert ProductProjection.PART_NUMBER.lower() not in products_dataframe.columns
+
+    def test__get_products_dataframe_with_no_results__returns_empty_dataframe(
+        self, client, unique_identifier
+    ):
+        """Test that get_products_dataframe returns an empty DataFrame when no products match."""
+        non_existent_part_number = unique_identifier
+
+        products_dataframe = get_products_dataframe(
+            product_client=client,
+            products_query_filter=f'partNumber == "{non_existent_part_number}"',
+        )
+
+        assert isinstance(products_dataframe, DataFrame)
+        assert products_dataframe.empty
