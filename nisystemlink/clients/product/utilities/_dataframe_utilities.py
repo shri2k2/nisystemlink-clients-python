@@ -76,7 +76,7 @@ def get_products_dataframe(
 
     Args:
         product_client (ProductClient): The product client instance used to fetch product data.
-        products_query_filter (str): The filter string used to query products.
+        products_query_filter (str): The product linq filter used to query products.
         column_projection (Optional[List[ProductProjection]]): A list of specific product fields to retrieve.
                 - Mention only the `list of fields` which are to be retrieved.
                 - If `left out` or given `None`, it retrieves all the fields.
