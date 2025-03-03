@@ -8,7 +8,6 @@ from nisystemlink.clients.product.models import (
     ProductResponse,
     QueryProductsRequest,
 )
-from nisystemlink.clients.product.utilities._constants import HttpConstants
 from pandas import DataFrame
 
 
@@ -32,19 +31,16 @@ def __query_products_batched(
         filter=products_query_filter,
         order_by=ProductOrderBy.UPDATED_AT,
         projection=column_projection,
-        take=HttpConstants.TAKE,
+        take=1000,
     )
 
     all_products: List[ProductResponse] = []
 
     response = product_client.query_products_paged(products_query)
-
     all_products.extend(response.products)
-
     while response.continuation_token:
         products_query.continuation_token = response.continuation_token
         response = product_client.query_products_paged(products_query)
-
         all_products.extend(response.products)
 
     return all_products
@@ -72,7 +68,7 @@ def get_products_dataframe(
     products_query_filter: str,
     column_projection: Optional[List[ProductProjection]] = None,
 ) -> DataFrame:
-    """Fetches and normalizes products data into a Pandas DataFrame.
+    """Fetches products as Pandas DataFrame.
 
     Args:
         product_client (ProductClient): The product client instance used to fetch product data.

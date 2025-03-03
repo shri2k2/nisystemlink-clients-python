@@ -392,8 +392,26 @@ class TestProductClient:
         self, client, create_products, unique_identifier
     ):
         part_number = unique_identifier
+        name = "Test Name"
+        family = "Example Family"
+        file_ids = ["file1", "file2"]
+        keywords = ["testing"]
+        property_name = "test_property"
+        property_value = "yes"
+        properties = {property_name: property_value}
 
-        create_products([CreateProductRequest(part_number=part_number)])
+        create_products(
+            [
+                CreateProductRequest(
+                    part_number=part_number,
+                    name=name,
+                    family=family,
+                    file_ids=file_ids,
+                    keywords=keywords,
+                    properties=properties,
+                )
+            ]
+        )
         products_dataframe = get_products_dataframe(
             product_client=client,
             products_query_filter=f'partNumber == "{part_number}"',
@@ -406,6 +424,21 @@ class TestProductClient:
             products_dataframe.iloc[0][ProductProjection.PART_NUMBER.lower()]
             == part_number
         )
+        assert ProductProjection.NAME.lower() in products_dataframe.columns
+        assert products_dataframe.iloc[0][ProductProjection.NAME.lower()] == name
+        assert ProductProjection.FAMILY.lower() in products_dataframe.columns
+        assert products_dataframe.iloc[0][ProductProjection.FAMILY.lower()] == family
+        assert ProductProjection.FILE_IDS.lower() in products_dataframe.columns
+        assert (
+            products_dataframe.iloc[0][ProductProjection.FILE_IDS.lower()] == file_ids
+        )
+        assert ProductProjection.KEYWORDS.lower() in products_dataframe.columns
+        assert (
+            products_dataframe.iloc[0][ProductProjection.KEYWORDS.lower()] == keywords
+        )
+        property_column = f"{ProductProjection.PROPERTIES.lower()}.{property_name}"
+        assert property_column in products_dataframe.columns
+        assert products_dataframe.iloc[0][property_column] == property_value
 
     def test__get_products_dataframe_with_projection__returns_limited_columns(
         self, client, create_products, unique_identifier
@@ -425,14 +458,14 @@ class TestProductClient:
 
         assert isinstance(products_dataframe, DataFrame)
         assert not products_dataframe.empty
+        assert len(products_dataframe.iloc[0]) == 2
         assert ProductProjection.NAME.lower() in products_dataframe.columns
         assert ProductProjection.FAMILY.lower() in products_dataframe.columns
         assert ProductProjection.PART_NUMBER.lower() not in products_dataframe.columns
 
-    def test__get_products_dataframe_with_no_results__returns_empty_dataframe(
+    def test__get_products_dataframe_with_invalid_filter__returns_empty_dataframe(
         self, client, unique_identifier
     ):
-        """Test that get_products_dataframe returns an empty DataFrame when no products match."""
         non_existent_part_number = unique_identifier
 
         products_dataframe = get_products_dataframe(
