@@ -21,7 +21,7 @@ def __query_products_batched(
 
     Args:
         product_client (ProductClient): The product client instance used to fetch product data.
-        products_query_filter (str): The filter string used to query products.
+        products_query_filter (str): The linq filter used to query products.
         column_projection (Optional[List[ProductProjection]]): A list of specific fields to retrieve.
             Defaults to None, which retrieves all fields.
 
