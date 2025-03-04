@@ -2,17 +2,15 @@ from typing import List
 
 from nisystemlink.clients.product._product_client import ProductClient
 from nisystemlink.clients.product.models._paged_products import PagedProducts
-from nisystemlink.clients.product.models._product_response import (
-    ProductResponse,
+from nisystemlink.clients.product.models._product import (
+    Product,
 )
 from nisystemlink.clients.product.models._query_products_request import (
     QueryProductsRequest,
 )
 
 
-def get_products_linked_to_file(
-    client: ProductClient, file_id: str
-) -> List[ProductResponse]:
+def get_products_linked_to_file(client: ProductClient, file_id: str) -> List[Product]:
     """Gets a list of all the products that are linked to the file.
 
     Args:
