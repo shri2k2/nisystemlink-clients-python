@@ -392,23 +392,36 @@ class TestProductClient:
         self, client, create_products, unique_identifier
     ):
         part_number = unique_identifier
-        name = "Test Name"
-        family = "Example Family"
-        file_ids = ["file1", "file2"]
-        keywords = ["testing"]
-        property_name = "test_property"
-        property_value = "yes"
-        properties = {property_name: property_value}
+        expected_product_dict = {
+            "part_number": part_number,
+            "name": "Test Name",
+            "family": "Example Family",
+            "file_ids": ["file1", "file2"],
+            "keywords": ["testing"],
+            "properties.test_property_1": "value1",
+            "properties.test_property_2": "value2",
+            "properties.test_property_3": "value3",
+        }
 
         create_products(
             [
                 CreateProductRequest(
-                    part_number=part_number,
-                    name=name,
-                    family=family,
-                    file_ids=file_ids,
-                    keywords=keywords,
-                    properties=properties,
+                    part_number=expected_product_dict["part_number"],
+                    name=expected_product_dict["name"],
+                    family=expected_product_dict["family"],
+                    file_ids=expected_product_dict["file_ids"],
+                    keywords=expected_product_dict["keywords"],
+                    properties={
+                        "test_property_1": expected_product_dict[
+                            "properties.test_property_1"
+                        ],
+                        "test_property_2": expected_product_dict[
+                            "properties.test_property_2"
+                        ],
+                        "test_property_3": expected_product_dict[
+                            "properties.test_property_3"
+                        ],
+                    },
                 )
             ]
         )
@@ -419,26 +432,13 @@ class TestProductClient:
 
         assert isinstance(products_dataframe, DataFrame)
         assert not products_dataframe.empty
-        assert ProductProjection.PART_NUMBER.lower() in products_dataframe.columns
-        assert (
-            products_dataframe.iloc[0][ProductProjection.PART_NUMBER.lower()]
-            == part_number
+        # Assert all expected columns exist
+        assert set(expected_product_dict.keys()).issubset(
+            set(products_dataframe.columns)
         )
-        assert ProductProjection.NAME.lower() in products_dataframe.columns
-        assert products_dataframe.iloc[0][ProductProjection.NAME.lower()] == name
-        assert ProductProjection.FAMILY.lower() in products_dataframe.columns
-        assert products_dataframe.iloc[0][ProductProjection.FAMILY.lower()] == family
-        assert ProductProjection.FILE_IDS.lower() in products_dataframe.columns
-        assert (
-            products_dataframe.iloc[0][ProductProjection.FILE_IDS.lower()] == file_ids
-        )
-        assert ProductProjection.KEYWORDS.lower() in products_dataframe.columns
-        assert (
-            products_dataframe.iloc[0][ProductProjection.KEYWORDS.lower()] == keywords
-        )
-        property_column = f"{ProductProjection.PROPERTIES.lower()}.{property_name}"
-        assert property_column in products_dataframe.columns
-        assert products_dataframe.iloc[0][property_column] == property_value
+        # Validate values in the DataFrame
+        for column, expected_value in expected_product_dict.items():
+            assert products_dataframe.iloc[0][column] == expected_value
 
     def test__get_products_dataframe_with_projection__returns_limited_columns(
         self, client, create_products, unique_identifier

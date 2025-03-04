@@ -25,6 +25,10 @@ def __query_products_batched(
 
     Returns:
         List[ProductResponse]: A list of product responses retrieved from the API.
+
+    Raises:
+        ApiException: If unable to communicate with the ``/nitestmonitor`` service
+            or provided an invalid argument.
     """
     products_query = QueryProductsRequest(
         filter=products_query_filter,
@@ -78,6 +82,10 @@ def get_products_dataframe(
 
     Returns:
         DataFrame: A Pandas DataFrame containing the product data.
+
+    Raises:
+        ApiException: If unable to communicate with the ``/nitestmonitor`` service
+            or provided an invalid argument.
     """
     products = __query_products_batched(
         product_client, products_query_filter, column_projection
