@@ -1,6 +1,7 @@
 import uuid
 from typing import List
 
+import pandas as pd
 import pytest
 from nisystemlink.clients.core._http_configuration import HttpConfiguration
 from nisystemlink.clients.product._product_client import ProductClient
@@ -389,7 +390,7 @@ class TestProductClient:
         assert queried_product.properties is None
 
     def test__get_products_dataframe__returns_dataframe(
-        self, client, create_products, unique_identifier
+        self, client: ProductClient, create_products, unique_identifier
     ):
         part_number = unique_identifier
         expected_product_dict = {
@@ -425,9 +426,20 @@ class TestProductClient:
                 )
             ]
         )
+        product_query_filter = f'partNumber == "{part_number}"'
         products_dataframe = get_products_dataframe(
             product_client=client,
-            products_query_filter=f'partNumber == "{part_number}"',
+            products_query_filter=product_query_filter,
+        )
+        query_product_result = client.query_products_paged(
+            QueryProductsRequest(filter=product_query_filter)
+        )
+        expected_dataframe = pd.json_normalize(
+            [
+                product.dict(exclude_unset=True)
+                for product in query_product_result.products
+            ],
+            sep=".",
         )
 
         assert isinstance(products_dataframe, DataFrame)
@@ -437,11 +449,10 @@ class TestProductClient:
             set(products_dataframe.columns)
         )
         # Validate values in the DataFrame
-        for column, expected_value in expected_product_dict.items():
-            assert products_dataframe.iloc[0][column] == expected_value
+        assert products_dataframe.equals(expected_dataframe)
 
     def test__get_products_dataframe_with_projection__returns_limited_columns(
-        self, client, create_products, unique_identifier
+        self, client: ProductClient, create_products, unique_identifier
     ):
         part_number = unique_identifier
         name = "Projected Product"
@@ -450,21 +461,33 @@ class TestProductClient:
         create_products(
             [CreateProductRequest(part_number=part_number, name=name, family=family)]
         )
+        product_query_filter = f'partNumber == "{part_number}"'
+        column_projection = [ProductProjection.NAME, ProductProjection.FAMILY]
         products_dataframe = get_products_dataframe(
             product_client=client,
-            products_query_filter=f'partNumber == "{part_number}"',
-            column_projection=[ProductProjection.NAME, ProductProjection.FAMILY],
+            products_query_filter=product_query_filter,
+            column_projection=column_projection,
         )
+        query_product_result = client.query_products_paged(
+            QueryProductsRequest(
+                filter=product_query_filter, projection=column_projection
+            )
+        )
+        expected_dataframe = pd.json_normalize(
+            [
+                product.dict(exclude_unset=True)
+                for product in query_product_result.products
+            ],
+            sep=".",
+        )
+        expected_dataframe.dropna(axis="columns", how="all", inplace=True)
 
         assert isinstance(products_dataframe, DataFrame)
         assert not products_dataframe.empty
-        assert len(products_dataframe.iloc[0]) == 2
-        assert ProductProjection.NAME.lower() in products_dataframe.columns
-        assert ProductProjection.FAMILY.lower() in products_dataframe.columns
-        assert ProductProjection.PART_NUMBER.lower() not in products_dataframe.columns
+        assert products_dataframe.equals(expected_dataframe)
 
     def test__get_products_dataframe_with_invalid_filter__returns_empty_dataframe(
-        self, client, unique_identifier
+        self, client: ProductClient, unique_identifier
     ):
         non_existent_part_number = unique_identifier
 

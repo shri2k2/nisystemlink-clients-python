@@ -7,8 +7,9 @@ from nisystemlink.clients.product.models import (
     ProductProjection,
 )
 from nisystemlink.clients.product.utilities._client_utilities import (
-    __query_products_batched,
+    __batch_query_products,
 )
+from nisystemlink.clients.product.utilities._constants import HttpConstants
 from pandas import DataFrame
 
 
@@ -34,8 +35,11 @@ def get_products_dataframe(
         ApiException: If unable to communicate with the ``/nitestmonitor`` service
             or provided an invalid argument.
     """
-    products = __query_products_batched(
-        product_client, products_query_filter, column_projection, take=1000
+    products = __batch_query_products(
+        product_client,
+        products_query_filter,
+        column_projection,
+        take=HttpConstants.DEFAULT_QUERY_PRODUCTS_TAKE,
     )
 
     products_dataframe = __normalize_products(products)

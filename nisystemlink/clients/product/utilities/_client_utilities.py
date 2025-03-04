@@ -9,7 +9,7 @@ from nisystemlink.clients.product.models import (
 from nisystemlink.clients.product.utilities._constants import HttpConstants
 
 
-def __query_products_batched(
+def __batch_query_products(
     product_client: ProductClient,
     products_query_filter: str,
     column_projection: Optional[List[ProductProjection]] = None,
