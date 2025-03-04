@@ -3,8 +3,8 @@ from typing import List, Optional
 import pandas as pd
 from nisystemlink.clients.product import ProductClient
 from nisystemlink.clients.product.models import (
+    Product,
     ProductProjection,
-    ProductResponse,
 )
 from nisystemlink.clients.product.utilities._client_utilities import (
     __query_products_batched,
@@ -43,11 +43,11 @@ def get_products_dataframe(
     return products_dataframe
 
 
-def __normalize_products(products: List[ProductResponse]) -> DataFrame:
+def __normalize_products(products: List[Product]) -> DataFrame:
     """Normalizes product data from a list of product responses into a structured DataFrame.
 
     Args:
-        products (List[ProductResponse]): A list of product responses retrieved from the API.
+        products (List[Product]): A list of product responses retrieved from the API.
 
     Returns:
         DataFrame: A Pandas DataFrame containing the normalized product data.

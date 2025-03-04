@@ -2,8 +2,8 @@ from typing import List, Optional
 
 from nisystemlink.clients.product import ProductClient
 from nisystemlink.clients.product.models import (
+    Product,
     ProductProjection,
-    ProductResponse,
     QueryProductsRequest,
 )
 from nisystemlink.clients.product.utilities._constants import HttpConstants
@@ -14,7 +14,7 @@ def __query_products_batched(
     products_query_filter: str,
     column_projection: Optional[List[ProductProjection]] = None,
     take: int = HttpConstants.DEFAULT_QUERY_PRODUCTS_TAKE,
-) -> List[ProductResponse]:
+) -> List[Product]:
     """Queries products in batches from the product client.
 
     Args:
@@ -25,7 +25,7 @@ def __query_products_batched(
         take (Optional[int]): The maximum number of products to query per batch.
 
     Returns:
-        List[ProductResponse]: A list of product responses retrieved from the API.
+        List[Product]: A list of product responses retrieved from the API.
 
     Raises:
         ApiException: If unable to communicate with the ``/nitestmonitor`` service
@@ -37,7 +37,7 @@ def __query_products_batched(
         take=take,
     )
 
-    all_products: List[ProductResponse] = []
+    all_products: List[Product] = []
 
     response = product_client.query_products_paged(products_query)
     all_products.extend(response.products)
