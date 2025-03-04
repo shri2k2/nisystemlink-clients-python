@@ -3,7 +3,6 @@ from typing import List, Optional
 import pandas as pd
 from nisystemlink.clients.product import ProductClient
 from nisystemlink.clients.product.models import (
-    ProductOrderBy,
     ProductProjection,
     ProductResponse,
     QueryProductsRequest,
@@ -29,7 +28,6 @@ def __query_products_batched(
     """
     products_query = QueryProductsRequest(
         filter=products_query_filter,
-        order_by=ProductOrderBy.UPDATED_AT,
         projection=column_projection,
         take=1000,
     )
