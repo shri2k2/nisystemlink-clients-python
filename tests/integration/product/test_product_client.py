@@ -18,7 +18,10 @@ from nisystemlink.clients.product.models._query_products_request import (
     QueryProductsRequest,
     QueryProductValuesRequest,
 )
-from nisystemlink.clients.product.utilities import get_products_linked_to_file, get_products_dataframe
+from nisystemlink.clients.product.utilities import (
+    get_products_dataframe,
+    get_products_linked_to_file,
+)
 from pandas import DataFrame
 
 
@@ -392,7 +395,7 @@ class TestProductClient:
         self, client: ProductClient, create_products, unique_identifier
     ):
         part_number = unique_identifier
-        expected_product_dict = {
+        expected_product = {
             "part_number": part_number,
             "name": "Test Name",
             "family": "Example Family",
@@ -403,50 +406,41 @@ class TestProductClient:
             "properties.test_property_3": "value3",
         }
 
-        create_products(
+        created_products: CreateProductsPartialSuccess = create_products(
             [
                 CreateProductRequest(
-                    part_number=expected_product_dict["part_number"],
-                    name=expected_product_dict["name"],
-                    family=expected_product_dict["family"],
-                    file_ids=expected_product_dict["file_ids"],
-                    keywords=expected_product_dict["keywords"],
+                    part_number=expected_product["part_number"],
+                    name=expected_product["name"],
+                    family=expected_product["family"],
+                    file_ids=expected_product["file_ids"],
+                    keywords=expected_product["keywords"],
                     properties={
-                        "test_property_1": expected_product_dict[
+                        "test_property_1": expected_product[
                             "properties.test_property_1"
                         ],
-                        "test_property_2": expected_product_dict[
+                        "test_property_2": expected_product[
                             "properties.test_property_2"
                         ],
-                        "test_property_3": expected_product_dict[
+                        "test_property_3": expected_product[
                             "properties.test_property_3"
                         ],
                     },
                 )
             ]
         )
-        product_query_filter = f'partNumber == "{part_number}"'
         products_dataframe = get_products_dataframe(
             product_client=client,
-            products_query_filter=product_query_filter,
-        )
-        query_product_result = client.query_products_paged(
-            QueryProductsRequest(filter=product_query_filter)
+            products_query_filter=f'partNumber == "{part_number}"',
         )
         expected_dataframe = pd.json_normalize(
-            [
-                product.dict(exclude_unset=True)
-                for product in query_product_result.products
-            ],
+            created_products.products[0].dict(exclude_unset=True),
             sep=".",
         )
 
         assert isinstance(products_dataframe, DataFrame)
         assert not products_dataframe.empty
         # Assert all expected columns exist
-        assert set(expected_product_dict.keys()).issubset(
-            set(products_dataframe.columns)
-        )
+        assert set(expected_product.keys()).issubset(set(products_dataframe.columns))
         # Validate values in the DataFrame
         assert products_dataframe.equals(expected_dataframe)
 
