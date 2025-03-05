@@ -18,8 +18,7 @@ from nisystemlink.clients.product.models._query_products_request import (
     QueryProductsRequest,
     QueryProductValuesRequest,
 )
-from nisystemlink.clients.product.utilities import get_products_dataframe
-from nisystemlink.clients.product.utilities import get_products_linked_to_file
+from nisystemlink.clients.product.utilities import get_products_linked_to_file, get_products_dataframe
 from pandas import DataFrame
 
 
